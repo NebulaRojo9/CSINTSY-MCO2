@@ -1,0 +1,1 @@
+  # Remove gold from the Prolog knowledge base
