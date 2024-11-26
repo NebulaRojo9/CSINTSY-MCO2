@@ -14,10 +14,14 @@ fall((X, Y)) :- pit((X, Y)).
 findBreeze((X, Y)) :- adjacent((X, Y), Pit), pit(Pit).
 
 % Compares all breezes found so far
+% Compares all breezes found so far
 findPit((X, Y)) :-
-    % format (element, condition, list)
-    % looking for coordinates, from (adjacent to given x and y) and is a breeze spot, from the BreezeSpots
-                                        % NOTE B reezeSpots and not b reezeSpots, capital means variable
+    % dont check if it is a pit if it was a previously explored spot
+    \+ explored((X, Y)),
+
+    % Find all adjacent breeze spots
     findall((AdjX, AdjY), (adjacent((X, Y), (AdjX, AdjY)), breezeSpot((AdjX, AdjY))), BreezeSpots),
+
+    % Check if there are enough breeze spots
     length(BreezeSpots, Count),
     Count >= 3.

@@ -87,6 +87,7 @@ def movePlayer(playerPos, direction):
 
 # Not really necessary but since specs call them that
 def grab(x, y):
+    print("GRABBING")
     prolog.retract(f"gold(({x}, {y}))")
 
 def leave(coinCount):
@@ -97,6 +98,7 @@ def leave(coinCount):
 
 #
 def findPits(adjX, adjY):
+    print("FINDING PIT")
     print("Current Pit Spots:", list(prolog.query("pit((X, Y))")))
     print("Current Breeze Spots:", list(prolog.query("breezeSpot((X, Y))")))
     
@@ -104,27 +106,32 @@ def findPits(adjX, adjY):
     return findPit
 
 def markSpots(playerPosition):
+    print("MARKING SPOT")
     x, y = playerPosition
 
     # to add a new breeze to the KB
     isBreeze = bool(list(prolog.query(f"findBreeze(({x}, {y}))")))
 
+    print("COORDINATE CHECK", x, y, playerVision[x][y])
+
     if isBreeze:
-        print(f"Adding breezeSpot: ({x}, {y})")
-        prolog.assertz(f"breezeSpot(({x}, {y}))")
+        if (playerVision[y][x] != "#"):
+            print(f"Adding breezeSpot: ({x}, {y})")
+            prolog.assertz(f"breezeSpot(({x}, {y}))")
 
     # Check all the adjacents of the destination
     for xChange, yChange in DIRECTIONS:
         adjX, adjY = x + xChange, y + yChange
         if 0 <= adjX < len(map[0]) and 0 <= adjY < len(map):
-            if isBreeze:
+            if isBreeze and playerVision[y][x] != "#":
                 isPit = findPits(adjX, adjY)
                 if isPit:
-                    print(f"Pit found at ({adjX}, {adjY})")
-                    playerVision[adjY][adjX] = "P"
+                    if (playerVision[y][x] != "#" or playerVision[y][x] != "@"):
+                        print(f"Pit found at ({adjX}, {adjY})")
+                        playerVision[adjY][adjX] = "P"
 
-                    prolog.assertz(f"pitSpot(({adjX}, {adjY}))")
-                    print(f"Added pitSpot: ({adjX}, {adjY})")
+                    # prolog.assertz(f"pitSpot(({adjX}, {adjY}))")
+                    # print(f"Added pitSpot: ({adjX}, {adjY})")
                 else:
                     # to not modify P
                     if playerVision[adjY][adjX] == ".":
@@ -136,6 +143,9 @@ def markSpots(playerPosition):
 
 # Set the player's starting position in playerVision
 playerVision[playerPosition[1]][playerPosition[0]] = "H"
+# Mark spots as explored so they dont get checked for pits
+# otherwise, explored spots with 3 or more breezes become pits
+prolog.assertz(f"explored(({playerPosition[0]}, {playerPosition[1]}))")
 markSpots(playerPosition)
 
 while start:
@@ -158,6 +168,9 @@ while start:
         # To always maintain @
         if playerVision[y][x] == "." or playerVision[y][x] == "S" or playerVision[y][x] == "?" or playerVision[y][x] == "#":
             playerVision[y][x] = "@"
+            if playerVision[y][x] != "#":
+                prolog.assertz(f"explored(({x}, {y}))")
+
 
         # Gold check
         is_glitter = bool(list(prolog.query(f"glitter(({x}, {y}))")))
@@ -170,9 +183,10 @@ while start:
             start = False
         # Home
         elif map[y][x] == 'H':
-            leave(coinCount)
-            start = False
-            continue
+            # the player CAN leave but not forced to
+            if (coinCount >= 2):
+                leave(coinCount)
+                start = False
 
         # Update player position
         playerPosition = newPosition
