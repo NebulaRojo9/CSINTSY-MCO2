@@ -1,5 +1,10 @@
 # pip install pyswip
 
+# for GUI based 2D gridgame
+import tkinter as tk
+GRID_SIZE = 6
+CELL_SIZE = 60
+
 # for prolog use
 from pyswip import Prolog
 prolog = Prolog()
@@ -30,6 +35,7 @@ playerVision = [ ['.', '.', '.', '.', '.', '.'],
                 ['.', '.', '.', '.', '.', '.'],
                 ['.', '.', '.', '.', '.', '.'],
                 ['.', '.', '.', '.', '.', '.']]
+
 
 # store those spots as pit or gold within the KB
 def storeItems(map):
@@ -192,3 +198,77 @@ while start:
         playerPosition = newPosition
     else:
         print(message)
+
+
+
+
+
+class GridGame:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("The Adventure World")
+
+        # Creating Canvas for nxn Grid
+        self.canvas = tk.Canvas(root, width=GRID_SIZE * CELL_SIZE, height=GRID_SIZE * CELL_SIZE)
+        self.canvas.pack()
+
+        # Draw the grid
+        self.cells = {}
+        for row in range(GRID_SIZE):
+            for col in range(GRID_SIZE):
+                x1 = col * CELL_SIZE
+                y1 = row * CELL_SIZE
+                x2 = x1 + CELL_SIZE
+                y2 = y1 + CELL_SIZE
+                cell = self.canvas.create_rectangle(x1, y1, x2, y2, fill="gray14", outline="black")
+                text = self.canvas.create_text((x1+x2)/2, (y1+y2)/2, text=f"({row},{col})", font=("Arial", 10), fill="white")
+                self.cells[(row, col)] = {'cell': cell, 'text': text}
+
+        # Initialize player postiion
+        self.player_pos = findPlayerStart(map)
+        self.update_player_position()
+
+        # Bind arrow key events
+        root.bind("<Up>", self.move_up)
+        root.bind("<Down>", self.move_down)
+        root.bind("<Left>", self.move_left)
+        root.bind("<Right>", self.move_right)
+
+    def update_player_position(self):
+        # Clear all cells
+        for (row, col), cell in self.cells.items():
+            self.canvas.itemconfig(cell, fill="gray14")
+        
+        # Highlight player's position
+        row, col = self.player_pos
+        self.canvas.itemconfig(self.cells[(row, col)], fill = "green")
+
+    def move_up(self, event):
+        row, col = self.player_pos
+        if row > 0: # Check boundary
+            self.player_pos = (row - 1, col)
+        self.update_player_position()
+    
+    def move_down(self, event):
+        row, col = self.player_pos
+        if row < GRID_SIZE - 1:  # Check boundary
+            self.player_pos = (row + 1, col)
+        self.update_player_position()
+
+    def move_left(self, event):
+        row, col = self.player_pos
+        if col > 0:  # Check boundary
+            self.player_pos = (row, col - 1)
+        self.update_player_position()
+
+    def move_right(self, event):
+        row, col = self.player_pos
+        if col < GRID_SIZE - 1:  # Check boundary
+            self.player_pos = (row, col + 1)
+        self.update_player_position()
+
+# Run the game
+if __name__ == "__main__":
+    root = tk.Tk()
+    game = GridGame(root)
+    root.mainloop()
